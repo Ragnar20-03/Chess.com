@@ -1,27 +1,26 @@
 import { WebSocket } from "ws"
-import { INIT_GAME } from "./Messages"
+import { INIT_GAME, MOVE } from "./Messages"
+import { Game } from "./Game"
 
-interface Game 
-{
-    id : number , 
-    name : string , 
-    player1 : WebSocket , 
-    player2 : WebSocket 
-}
+
 
 export class GameManager 
 {
     private games : Game [] 
-    private pendingUser : WebSocket 
+    private pendingUser : WebSocket  | null ; 
     private  users : WebSocket [] 
+
     constructor () 
     {
         this.games = [] 
+        this.pendingUser = null ;
+        this.users = [] ; 
     }
 
     addUser (socket : WebSocket )
     {
         this.users.push(socket);
+        this.addhandler(socket);
     }
 
     removeUser ( socket : WebSocket)
@@ -31,24 +30,33 @@ export class GameManager
         //stop the game or wait for reconnect !
     }
 
-    private handleMessage () 
-    {
-
-    }
     private addhandler ( socket : WebSocket)
     {
         socket.on("message" , (data) => {
-            const message = JSON.stringify(data.toString() );
-            if (message == INIT_GAME)
+            const message = JSON.parse(data.toString() );
+            if (message.type  == INIT_GAME)
             {
                 if (this.pendingUser)
                 {
                     // Start THe Game 
+                    const game = new Game (this.pendingUser , socket ) 
+                    this.games.push(game);
+                    this.pendingUser = null ; 
                 }
                 else 
                 {
                     this.pendingUser = socket ; 
                 }
+            }
+
+            if (message == MOVE)
+            {   
+                const game = this.games.find(game => game.player1 == socket || game.player2 == socket)
+                if (game)
+                {
+                    game.makeMove (socket , message.move );
+                }
+
             }
         })
     }
