@@ -18,7 +18,8 @@ export class GameManager
     }
 
     addUser (socket : WebSocket )
-    {
+    {   
+        
         this.users.push(socket);
         this.addhandler(socket);
     }
@@ -34,6 +35,7 @@ export class GameManager
     {
         socket.on("message" , (data) => {
             const message = JSON.parse(data.toString() );
+            
             if (message.type  == INIT_GAME)
             {
                 if (this.pendingUser)
@@ -49,7 +51,7 @@ export class GameManager
                 }
             }
 
-            if (message == MOVE)
+            if (message.type == MOVE)
             {   
                 const game = this.games.find(game => game.player1 == socket || game.player2 == socket)
                 if (game)
